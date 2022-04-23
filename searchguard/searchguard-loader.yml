@@ -1,0 +1,22 @@
+# Search Guard configuration loading script
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: searchguard-loader
+data:
+  loader.sh: |
+    if [ $NODENAME == 'elasticsearch-0' ]; then
+      bash /usr/share/elasticsearch/plugins/search-guard-7/tools/sgadmin.sh \
+      -nhnv \
+      -icl \
+      -h \
+      "localhost" \
+      -cacert \
+      /usr/share/elasticsearch/config/pki/ca.pem \
+      -key \
+      /usr/share/elasticsearch/config/pki/sgadmin.key \
+      -cert \
+      /usr/share/elasticsearch/config/pki/sgadmin.pem \
+      -cd \
+      /tmp/sgconfig
+    fi

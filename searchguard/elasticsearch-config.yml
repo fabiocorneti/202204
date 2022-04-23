@@ -1,0 +1,34 @@
+# The Elasticsearch configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: elasticsearch-config
+data:
+  elasticsearch.yml: |
+    http.port: 9200
+    transport.port: 9300
+    cluster.name: siren
+    network.host: "0.0.0.0"
+    bootstrap.memory_lock: false
+    discovery.seed_hosts: [elasticsearch-0.elasticsearch]
+    cluster.initial_master_nodes: [elasticsearch-0]
+    siren.connector.username: federate_system
+    siren.connector.password: password
+    node.attr.connector.jdbc: true
+    xpack.security.enabled: false
+    ingest.geoip.downloader.enabled: false
+    searchguard.allow_custom_headers: "_siren_.*"
+    searchguard.ssl.transport.enabled: true
+    searchguard.ssl.transport.pemcert_filepath: pki/localhost.pem
+    searchguard.ssl.transport.pemkey_filepath: pki/localhost.key
+    searchguard.ssl.transport.pemtrustedcas_filepath: pki/ca.pem
+    searchguard.ssl.transport.enforce_hostname_verification: false
+    searchguard.ssl.http.enabled: true
+    searchguard.ssl.http.pemcert_filepath: pki/localhost.pem
+    searchguard.ssl.http.pemkey_filepath: pki/localhost.key
+    searchguard.ssl.http.pemtrustedcas_filepath: pki/ca.pem
+    searchguard.restapi.roles_enabled:
+      - investigate_admin
+    searchguard.authcz.admin_dn:
+      - CN=sgadmin
+    siren.dataspaces.jws.pubkey: 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwn/4GHo2TYFDEe2YmjmmABH7pK9jAPjE90Nccze+1AwuNXnQZ84FNQVBV3FtKmL0hVxK+623rPtACbeuvVgaku+ucqoVzaUj+GglRqWEHlb6urUv54VL5qx6tK0j+m9NAR08aDIEsHB4UMrXvnYO0xNMg6fvc+NjctFEdKxNs6fWykmVF59uLRjfK9qtattDlSbqY5yJCNGGIQm8c6yBeUuQlC2fnRklKSRiO9dDhf8Wr1c1tswmxAKFWQvjvyNT2ylqrq7BaC7W/il+yzlShCTcPbOJN5PTo/5duaP8i1sGMKDloJMyEDK/DdctG/h1AzPqaaG/H0Ysei7uqpeGbwIDAQAB'

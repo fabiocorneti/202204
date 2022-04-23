@@ -1,0 +1,408 @@
+# Search Guard configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: searchguard-config
+data:
+  sg_action_groups.yml: |
+    _sg_meta:
+      type: "actiongroups"
+      config_version: 2
+    UNLIMITED:
+      allowed_actions:
+        - "*"
+    ###### INDEX LEVEL ######
+    INDICES_ALL:
+      type: "index"
+      allowed_actions:
+        - "indices:*"
+    MANAGE:
+      type: "index"
+      allowed_actions:
+        - "indices:monitor/*"
+        - "indices:admin/*"
+    WRITE:
+      type: "index"
+      allowed_actions:
+        - "indices:data/write*"
+        - "indices:admin/mapping/put"
+    READ:
+      type: "index"
+      allowed_actions:
+        - "indices:data/read*"
+    VIEW_INDEX_METADATA:
+      type: "index"
+      allowed_actions:
+        - "indices:admin/aliases/get"
+        - "indices:admin/aliases/exists"
+        - "indices:admin/get"
+        - "indices:admin/exists"
+        - "indices:admin/mappings/fields/get*"
+        - "indices:admin/mappings/get*"
+        - "indices:admin/mappings/federate/connector/get*"
+        - "indices:admin/mappings/federate/connector/fields/get*"
+        - "indices:admin/types/exists"
+        - "indices:admin/validate/query"
+        - "indices:monitor/settings/get"
+    ###### CLUSTER LEVEL ######
+    CLUSTER_ALL:
+      type: "cluster"
+      allowed_actions:
+        - "cluster:*"
+    CLUSTER_MONITOR:
+      type: "cluster"
+      allowed_actions:
+        - "cluster:monitor/*"
+    CLUSTER_COMPOSITE_OPS:
+      type: "cluster"
+      allowed_actions:
+        -  CLUSTER_COMPOSITE_OPS_RO
+        - "indices:data/write/bulk"
+        - "indices:data/write/reindex"
+        - "indices:admin/template/put"
+        - "indices:admin/template/delete"
+    CLUSTER_COMPOSITE_OPS_RO:
+      type: "cluster"
+      allowed_actions:
+        - "indices:data/read/mget"
+        - "indices:data/read/msearch"
+        - "indices:data/read/mtv"
+        - "indices:data/read/scroll*"
+        - "indices:admin/template/get"
+    CLUSTER_MANAGE:
+      type: "cluster"
+      allowed_actions:
+        - CLUSTER_INTERNAL_FEDERATE
+        - "cluster:admin/ingest/*"
+        - "cluster:admin/federate/*"
+        - "indices:admin/aliases*"
+        - "cluster:admin/settings/update"
+    CLUSTER_INTERNAL_FEDERATE:
+      type: "cluster"
+      allowed_actions:
+        - "cluster:internal/federate/*"
+  sg_tenants.yml: |
+    _sg_meta:
+      type: "tenants"
+      config_version: 2
+  sg_config.yml: |
+    _sg_meta:
+      type: "config"
+      config_version: 2
+    sg_config:
+      dynamic:
+        respect_request_indices_options: true
+        do_not_fail_on_forbidden: true
+        http:
+          anonymous_auth_enabled: false
+          xff:
+            enabled: false
+        authc:
+          transport_auth_domain:
+            http_enabled: true
+            order: 2
+            http_authenticator:
+              type: basic
+            authentication_backend:
+              type: internal
+          basic_internal_auth_domain:
+            http_enabled: true
+            http_authenticator:
+              type: basic
+              challenge: true
+            authentication_backend:
+              type: internal
+  sg_internal_users.yml: |
+    _sg_meta:
+      type: "internalusers"
+      config_version: 2
+    admin:
+      hash: $2a$12$zMeFc6Xi.pcgDVHsvtCV9ePNteVwTE5uGxcKdf7XQcKB9.VkD8iOy
+    federate_system:
+      hash: $2a$12$zMeFc6Xi.pcgDVHsvtCV9ePNteVwTE5uGxcKdf7XQcKB9.VkD8iOy
+    sirenserver:
+      hash: $2a$12$zMeFc6Xi.pcgDVHsvtCV9ePNteVwTE5uGxcKdf7XQcKB9.VkD8iOy
+    sirenadmin:
+      hash: $2a$12$zMeFc6Xi.pcgDVHsvtCV9ePNteVwTE5uGxcKdf7XQcKB9.VkD8iOy
+      backend_roles:
+        - investigate_admin
+        - administrators
+        - users
+    sirenuser:
+      hash: $2a$12$zMeFc6Xi.pcgDVHsvtCV9ePNteVwTE5uGxcKdf7XQcKB9.VkD8iOy
+      backend_roles:
+        - investigate_user
+        - users
+    sirennoinvestor:
+      hash: $2a$12$zMeFc6Xi.pcgDVHsvtCV9ePNteVwTE5uGxcKdf7XQcKB9.VkD8iOy
+      backend_roles:
+        - sirennoinvestor
+        - users
+    logstash:
+      hash: $2a$12$zMeFc6Xi.pcgDVHsvtCV9ePNteVwTE5uGxcKdf7XQcKB9.VkD8iOy
+    CN=demouser:
+      hash: $2a$12$zMeFc6Xi.pcgDVHsvtCV9ePNteVwTE5uGxcKdf7XQcKB9.VkD8iOy
+    sirenalert:
+      hash: $2a$12$zMeFc6Xi.pcgDVHsvtCV9ePNteVwTE5uGxcKdf7XQcKB9.VkD8iOy
+  sg_roles.yml: |
+    _sg_meta:
+      type: "roles"
+      config_version: 2
+    # Allows any action on the cluster.
+    sg_all_access:
+      cluster_permissions:
+      - '*'
+      index_permissions:
+      - index_patterns:
+        - '*'
+        allowed_actions:
+        - '*'
+    # Allows reading data from all indices.
+    sg_readall:
+      index_permissions:
+      - index_patterns:
+        - '*'
+        allowed_actions:
+        - 'READ'
+    # Permissions for a Logstash client.
+    logstash:
+      cluster_permissions:
+      - CLUSTER_COMPOSITE_OPS
+      - CLUSTER_MONITOR
+      index_permissions:
+      - index_patterns:
+        - 'logstash-*'
+        - '*beat*'
+        allowed_actions:
+        - INDICES_ALL
+    # Permissions for a Siren Alert system user.
+    alert_system:
+      cluster_permissions:
+      - CLUSTER_INTERNAL_FEDERATE
+      - CLUSTER_COMPOSITE_OPS
+      - CLUSTER_MONITOR
+      index_permissions:
+      - index_patterns:
+        - '*'
+        allowed_actions:
+        - READ
+        - VIEW_INDEX_METADATA
+        - 'indices:monitor/stats'
+      - index_patterns:
+        - 'watcher_alarms*'
+        - 'watcher'
+        - '?siren'
+        allowed_actions:
+        - INDICES_ALL
+    # Permissions for the federate system user
+    federate_system:
+      index_permissions:
+      - index_patterns:
+        - '?siren-federate-*'
+        allowed_actions:
+        - INDICES_ALL
+    # Permissions for the investigate system user
+    investigate_system:
+      cluster_permissions:
+      - CLUSTER_COMPOSITE_OPS
+      - CLUSTER_MANAGE
+      - CLUSTER_MONITOR
+      index_permissions:
+      - index_patterns:
+        - 'siren-*'
+        - '*_revised'
+        - '?siren*'
+        - '?map__*'
+        - 'watcher*'
+        allowed_actions:
+        - INDICES_ALL
+      - index_patterns:
+        - 'article'
+        - 'company'
+        - 'investment'
+        - 'investor'
+        allowed_actions:
+        - VIEW_INDEX_METADATA
+      - index_patterns:
+        - web-service-*
+        allowed_actions:
+        - READ
+        - VIEW_INDEX_METADATA
+        - MANAGE
+        - WRITE
+    # Permissions for a Investigate administrator
+    investigate_admin:
+      cluster_permissions:
+      - CLUSTER_COMPOSITE_OPS
+      - CLUSTER_MANAGE
+      - CLUSTER_MONITOR
+      index_permissions:
+      - index_patterns:
+        - '*'
+        allowed_actions:
+        - MANAGE
+        - WRITE
+        - READ
+        - VIEW_INDEX_METADATA
+    # Permissions for a Investigate regular user.
+    investigate_user:
+      cluster_permissions:
+      - CLUSTER_COMPOSITE_OPS_RO
+      - CLUSTER_INTERNAL_FEDERATE
+      index_permissions:
+      - index_patterns:
+        - 'article'
+        - 'company'
+        - 'investment'
+        - 'investor'
+        - '*_revised'
+        - '?map__*'
+        allowed_actions:
+        - READ
+        - VIEW_INDEX_METADATA
+    # Permissions for a Investigate user with no access to the investor index or Siren Alert (watcher indices).
+    investigate_user_no_investor:
+      cluster_permissions:
+      - CLUSTER_COMPOSITE_OPS_RO
+      - CLUSTER_INTERNAL_FEDERATE
+      index_permissions:
+      - index_patterns:
+        - 'article'
+        - 'company'
+        - 'investment'
+        - 'article_revised'
+        - 'company_revised'
+        - 'investment_revised'
+        allowed_actions:
+        - READ
+        - VIEW_INDEX_METADATA
+    # Permissions on shared index component indices for all users
+    sic_user:
+      cluster_permissions:
+      - CLUSTER_COMPOSITE_OPS_RO
+      - CLUSTER_INTERNAL_FEDERATE
+      index_permissions:
+      - index_patterns:
+        - 'siren-*'
+        allowed_actions:
+        - READ
+        - VIEW_INDEX_METADATA
+        dls: '{
+          "bool": {
+            "should": [
+              {
+                "siren_dataspaces": {
+                  "field": "_siren.sic.namespace"
+                }
+              },
+              {
+                "bool": {
+                  "must_not": {
+                    "exists": {
+                      "field": "_siren.sic.namespace"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }'
+    webservices_viewer:
+      index_permissions:
+      - index_patterns:
+        - web-service-*-invocations
+        dls: '{"term" : {"invocation.user" : "${user.name}"}}'
+        allowed_actions:
+        - READ
+        - VIEW_INDEX_METADATA
+      - index_patterns:
+        - web-service-*
+        allowed_actions:
+        - READ
+        - VIEW_INDEX_METADATA
+    # Permissions for a Investigate user using DLS rules (queries) for watcher alarms and reports
+    alert_viewer:
+      cluster_permissions:
+      - CLUSTER_COMPOSITE_OPS_RO
+      - CLUSTER_INTERNAL_FEDERATE
+      index_permissions:
+      - index_patterns:
+        - 'watcher_alarms-*'
+        allowed_actions:
+        - READ
+        - VIEW_INDEX_METADATA
+        dls: '{
+                "bool": {
+                  "should": [
+                    {
+                      "term": {
+                        "is_private": false
+                      }
+                    },
+                    {
+                      "bool": {
+                        "must_not": [
+                          {
+                            "exists": {
+                              "field": "is_private"
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "terms": {
+                        "roles": [${user.roles}]
+                      }
+                    },
+                    {
+                      "term": {
+                        "created_by": "${user.name}"
+                      }
+                    }
+                  ]
+                }
+              }'
+  sg_roles_mapping.yml: |
+    _sg_meta:
+      type: "rolesmapping"
+      config_version: 2
+    sg_all_access:
+      users:
+        - admin
+    federate_system:
+      users:
+        - federate_system
+    investigate_system:
+      users:
+        - sirenserver
+    investigate_admin:
+      users:
+        - sirenadmin
+    investigate_user:
+      users:
+        - sirenuser
+    investigate_user_no_investor:
+      users:
+        - sirennoinvestor
+    sirentransport:
+      users:
+        - 'CN=demouser'
+    logstash:
+      users:
+        - logstash
+    alert_system:
+      users:
+        - sirenalert
+    reflection_user:
+      users:
+        - sirenadmin
+    sic_user:
+      backend_roles:
+        - users
+    alert_viewer:
+      backend_roles:
+        - users
+    webservices_viewer:
+      backend_roles:
+        - users
